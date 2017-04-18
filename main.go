@@ -22,10 +22,11 @@ func main() {
 	db = InitDB(dbpath)
 	defer db.Close()
 	CreateTable(db)
+	CheckForDBUpdates(db)
 
 	r := mux.NewRouter()
 	r.HandleFunc("/add", AddHandler)
-	r.HandleFunc("/list", HomeHandler)
+	r.HandleFunc("/list", ListHandler)
 	r.HandleFunc("/{key}", ShortenedHandler)
 	http.Handle("/", r)
 	srv := &http.Server{
@@ -37,8 +38,6 @@ func main() {
 
 	log.Fatal(srv.ListenAndServeTLS("certificates/development.cer", "certificates/development.key"))
 }
-
-var myShortenedUrls = make(map[string]*MyUrl)
 
 func AddHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -60,26 +59,22 @@ func AddHandler(w http.ResponseWriter, r *http.Request) {
 		newUrl.ShortUrl = randSeq(7)
 	}
 	StoreUrl(db, newUrl)
-	log.Printf("Stored URL: %s\n", newUrl.ExpandedUrl)
-	//myShortenedUrls[s] = &newUrl
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "New url: <a href=\"https://r.spenser.io/%s\">https://r.spenser.io/%s</a>", newUrl.ShortUrl, newUrl.ShortUrl)
 }
 
-func HomeHandler(w http.ResponseWriter, r *http.Request) {
+func ListHandler(w http.ResponseWriter, r *http.Request) {
 	var msg string
-	for k, v := range myShortenedUrls {
-		msg += fmt.Sprintf("<a href=\"https://r.spenser.io/%s\">https://r.spenser.io/%s</a> - %s - %s<br>", k, k, v.Title, v.ExpandedUrl)
+	for _, v := range GetAllUrls(db) {
+		msg += fmt.Sprintf("<a href=\"https://r.spenser.io/%s\">https://r.spenser.io/%s</a> - %s - %s<br>", v.ShortUrl, v.ShortUrl, v.Title, v.ExpandedUrl)
 	}
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, msg)
 }
 
 func ShortenedHandler(w http.ResponseWriter, r *http.Request) {
-	//p := r.URL.EscapedPath()
 	pa := mux.Vars(r)
 	p := pa["key"]
-	log.Printf("Escaped path: %s", p)
 	s := FindUrl(db, p)
 	if s.ExpandedUrl != "" {
 		http.Redirect(w, r, s.ExpandedUrl, http.StatusTemporaryRedirect)
