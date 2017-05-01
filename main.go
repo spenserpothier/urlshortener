@@ -2,12 +2,12 @@ package main
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/schema"
 	_ "github.com/mattn/go-sqlite3"
+	"html/template"
 	"io"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -25,6 +25,8 @@ func main() {
 	CheckForDBUpdates(db)
 
 	r := mux.NewRouter()
+	r.PathPrefix("/static").Handler(http.StripPrefix("/static", http.FileServer(http.Dir("static/"))))
+
 	r.HandleFunc("/add", AddHandler)
 	r.HandleFunc("/list", ListHandler)
 	r.HandleFunc("/{key}", ShortenedHandler)
@@ -40,36 +42,54 @@ func main() {
 }
 
 func AddHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
+	if r.Method == http.MethodPost {
+		var newUrl MyUrl
+		r.ParseForm()
+		log.Printf("form: %v", r.PostForm) //
+		decoder := schema.NewDecoder()
+		err := decoder.Decode(&newUrl, r.PostForm)
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Printf("Error %v: ", err)
+			io.WriteString(w, "Error")
+			return
+		}
+		if len(newUrl.ShortUrl) == 0 {
+			newUrl.ShortUrl = randSeq(7)
+		}
+		StoreUrl(db, newUrl)
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, "New url: <a href=\"https://r.spenser.io/%s\">https://r.spenser.io/%s</a>", newUrl.ShortUrl, newUrl.ShortUrl)
+	} else if r.Method == http.MethodGet {
+		tmpl, err := template.ParseFiles("templates/add.tmpl")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		p := &struct {
+			Title string
+			Url   string
+		}{
+			r.URL.Query().Get("title"),
+			r.URL.Query().Get("url"),
+		}
+		w.WriteHeader(http.StatusOK)
+		tmpl.Execute(w, p)
+	} else {
 		w.WriteHeader(http.StatusInternalServerError)
 		io.WriteString(w, "Method not supported")
 		return
 	}
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		io.WriteString(w, "Error")
-		return
-	}
-	var newUrl MyUrl
-	json.Unmarshal(body, &newUrl)
 
-	defer r.Body.Close()
-	if len(newUrl.ShortUrl) == 0 {
-		newUrl.ShortUrl = randSeq(7)
-	}
-	StoreUrl(db, newUrl)
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "New url: <a href=\"https://r.spenser.io/%s\">https://r.spenser.io/%s</a>", newUrl.ShortUrl, newUrl.ShortUrl)
 }
 
 func ListHandler(w http.ResponseWriter, r *http.Request) {
-	var msg string
-	for _, v := range GetAllUrls(db) {
-		msg += fmt.Sprintf("<a href=\"https://r.spenser.io/%s\">https://r.spenser.io/%s</a> - %s - %s<br>", v.ShortUrl, v.ShortUrl, v.Title, v.ExpandedUrl)
+	tmpl, err := template.ParseFiles("templates/list.tmpl")
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, msg)
+	tmpl.Execute(w, GetAllUrls(db))
 }
 
 func ShortenedHandler(w http.ResponseWriter, r *http.Request) {
