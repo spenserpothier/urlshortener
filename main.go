@@ -87,6 +87,8 @@ func ListHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl, err := template.ParseFiles("templates/list.tmpl")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		io.WriteString(w, "Internal Server Error")
+		return
 	}
 	w.WriteHeader(http.StatusOK)
 	tmpl.Execute(w, GetAllUrls(db))
