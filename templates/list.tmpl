@@ -10,6 +10,7 @@
 
     <!-- Bootstrap -->
     <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/main.css" rel="stylesheet">
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -23,12 +24,15 @@
     <div class="container-fluid">
       <a href="/add" class="btn btn-success">Add new link</a>
       <a href="javascript:(function()%7Bwindow.open(%22https%3A%2F%2Fr.spenser.io%2Fadd%3Ftitle%3D%22%2Bdocument.title%2B%22%26url%3D%22%2Bdocument.URL)%7D)()" class="btn btn-default">Shorten Link</a> (bookmarklet)<br/><br/>
-      <table class="table table-hover">
-	<tr>
+      <div class="form-group pull-right">
+	<input type="text" class="search form-control" placeholder="What you looking for?">
+      </div>
+      <span class="counter pull-right"></span>
+      <table class="table table-hover table-bordered results">
+	<tr style="display: table-row; !important">
 	  <th>Short URL</th>
 	  <th>Title</th>
 	  <th>Expanded URL</th>
-	  <th>
 	</tr>
 	{{range .}}
 	 <tr>
@@ -42,5 +46,6 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
     <!-- Include all compiled plugins (below), or include individual files as needed -->
     <script src="/static/js/bootstrap.min.js"></script>
+    <script src="/static/js/main.js"></script>
   </body>
 </html>
