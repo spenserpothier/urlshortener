@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-const DB_VERSION = 1
+const DB_VERSION = 2
 
 func InitDB(filepath string) *sql.DB {
 	db, err := sql.Open("sqlite3", filepath)
@@ -16,6 +16,10 @@ func InitDB(filepath string) *sql.DB {
 	if db == nil {
 		panic("db nil")
 	}
+	enable_foreign_keys := `
+PRAGMA foreign_keys = ON;
+`
+	db.Exec(enable_foreign_keys)
 	return db
 }
 
@@ -60,11 +64,27 @@ func CheckForDBUpdates(db *sql.DB) {
 func UpdateDB(db *sql.DB, v int) {
 
 	if v == 1 {
-		// Do nothing, leaving here to remember how to add updates to DB down the road
-		//log.Printf("Updating DB to Version 2")
-		//updateVersion := "PRAGMA user_version=2;"
-		//db.Exec(updateVersion)
-		//v++
+		create_tags_table := `
+CREATE TABLE IF NOT EXISTS Tags(
+        Id INTEGER PRIMARY KEY NOT NULL,
+        Title TEXT
+);
+`
+		create_linktags_table := `
+CREATE TABLE IF NOT EXISTS LinkTags(
+        Id INTEGER PRIMARY KEY NOT NULL,
+        link_id INTEGER NOT NULL,
+        tag_id INTEGER NOT NULL,
+        FOREIGN KEY (link_id) REFERENCES MyUrls(Id),
+        FOREIGN KEY (tag_id) REFERENCES Tags(Id)
+);
+`
+		log.Printf("Updating DB to Version 2")
+		updateVersion := "PRAGMA user_version=2;"
+		db.Exec(create_tags_table)
+		db.Exec(create_linktags_table)
+		db.Exec(updateVersion)
+		v++
 	}
 }
 
