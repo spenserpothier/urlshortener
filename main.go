@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/schema"
@@ -29,6 +30,8 @@ func main() {
 
 	r.HandleFunc("/add", AddHandler)
 	r.HandleFunc("/list", ListHandler)
+	r.HandleFunc("/api/tags", TagsHandler)
+
 	r.HandleFunc("/{key}", ShortenedHandler)
 	http.Handle("/", r)
 	srv := &http.Server{
@@ -59,6 +62,8 @@ func AddHandler(w http.ResponseWriter, r *http.Request) {
 			newUrl.ShortUrl = randSeq(7)
 		}
 		StoreUrl(db, newUrl)
+		AddTagsToLink(db, newUrl.ShortUrl, "politics")
+
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprintf(w, "New url: <a href=\"https://r.spenser.io/%s\">https://r.spenser.io/%s</a>", newUrl.ShortUrl, newUrl.ShortUrl)
 	} else if r.Method == http.MethodGet {
@@ -104,6 +109,20 @@ func ShortenedHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(w, "Not Found")
 	}
+}
+
+func TagsHandler(w http.ResponseWriter, r *http.Request) {
+
+	q := r.URL.Query().Get("q")
+	tags := GetAlTags(db, q)
+	j, err := json.Marshal(tags)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "Error getting tags")
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprintf(w, string(j))
 }
 
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")

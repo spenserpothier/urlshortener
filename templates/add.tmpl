@@ -15,7 +15,8 @@
     <!--[if lt IE j]>
       <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
       <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-    <![endif]-->
+      <![endif]-->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css" rel="stylesheet" />
   </head>
   <body>
     <h1>Url Shortener</h1>
@@ -25,6 +26,9 @@
 	  <label>Title</label> <input type="text" name="Title" class="form-control" value="{{.Title}}" /><br/>
 	  <label>Url</label> <input type="text" name="url" class="form-control" value="{{.Url}}" /><br/>
 	  <label>Custom Short Url</label> <input type="text" name="ShortUrl" class="form-control"/><br/>
+	  <label>Tags</label>
+	  <select class="tagsinput form-control" style="width: 200px;" multiple name="tags">
+	  </select>
 	  <input type="submit" value="Add"><br/>
 	</form>
       </div>
@@ -33,5 +37,7 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
     <!-- Include all compiled plugins (below), or include individual files as needed -->
     <script src="/static/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.min.js"></script>
+    <script src="/static/js/tags.js"></script>
   </body>
 </html>

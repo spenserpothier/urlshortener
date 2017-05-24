@@ -166,3 +166,47 @@ SELECT Title, ShortUrl, ExpandedUrl FROM MyUrls
 	}
 	return result
 }
+
+func GetAlTags(db *sql.DB, q string) []Tags {
+	sql_find := `
+SELECT Id, Title FROM Tags WHERE Title LIKE '%' || ? || '%'
+`
+	stmt, _ := db.Prepare(sql_find)
+	rows, err := stmt.Query(q)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	var result []Tags
+
+	for rows.Next() {
+		item := Tags{}
+		err2 := rows.Scan(&item.Id, &item.Title)
+		if err2 != nil {
+			panic(err)
+		}
+		result = append(result, item)
+	}
+	return result
+}
+
+func AddTagsToLink(db *sql.DB, s string, t string) {
+	sql_add_tag := `
+INSERT INTO LinkTags (link_id, tag_id)
+ SELECT
+ (SELECT Id FROM MyUrls WHERE ShortURL = ?),
+ (SELECT Id FROM Tags WHERE Title = ?)
+;
+`
+	stmt, err := db.Prepare(sql_add_tag)
+	if err != nil {
+		panic(err)
+	}
+	defer stmt.Close()
+
+	_, err2 := stmt.Exec(s, t)
+	if err2 != nil {
+		panic(err2)
+	}
+}
